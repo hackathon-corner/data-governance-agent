@@ -1,0 +1,4 @@
+event_id,user_id,event_type,timestamp,extra_col
+e1,u1,VIEW,2025-11-15T10:00:00Z,999
+e2,u2,submit,2025-11-15T10:05:00Z,888
+e3,u3,bogus,2025-11-15T10:10:00Z,777
