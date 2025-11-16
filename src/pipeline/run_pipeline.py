@@ -21,6 +21,8 @@ import yaml
 from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
 from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
 from src.pipeline.data_quality import validate_data_quality, print_data_quality_results
+from src.pipeline.policy_enforcement import enforce_pii_policy, print_pii_policy_results
+
 
 
 
@@ -49,6 +51,12 @@ def load_schema(schema_name: str) -> Dict[str, Any]:
 def load_events_raw(filename: str) -> pd.DataFrame:
     events_path = RAW_DIR / filename
     return pd.read_csv(events_path)
+
+def save_events_curated(df: pd.DataFrame, filename: str) -> None:
+    CURATED_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = CURATED_DIR / filename
+    df.to_csv(out_path, index=False)
+    print(f"\nSaved curated events data to {out_path}")
 
 
 def main() -> None:
@@ -79,14 +87,26 @@ def main() -> None:
     dq_results = validate_data_quality(df_events, dq_config)
     print_data_quality_results(dq_results)
 
+    # ---- Stage 4: PII / Policy Enforcement ----
+    policy_config = config.get("policy", {})
+    print("\nRunning PII / policy enforcement...")
+    pii_results = enforce_pii_policy(df_events, events_schema, policy_config)
+    print_pii_policy_results(pii_results)
+
+    df_curated = pii_results["df_curated"]
+
+    # ---- Stage 5: Save curated output ----
+    curated_filename = config["targets"]["events_curated"]["filename"]
+    save_events_curated(df_curated, curated_filename)
+
+    print("\nPipeline executed successfully with schema, data quality, and PII/policy checks.")
+
+
 
     # Placeholder for future stages:
-    # - Policy/PII enforcement
     # - Transformations
     # - Load to curated
     # - Lineage & governance report
-
-    print("\nPipeline executed successfully with schema and data quality checks.")
 
 
 if __name__ == "__main__":
