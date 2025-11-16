@@ -1,37 +1,24 @@
+# Data Pipeline Governance Agent
 
-# Data Governance Agent
+Capstone project for the 5-Day AI Agents Intensive Course with Google.
 
-## Overview
-A comprehensive agent system for managing data governance policies, compliance, and data lineage across enterprise environments.
+## Goal
 
-## Features
-- Automated policy enforcement
-- Data lineage tracking
-- Compliance monitoring
-- Access control management
-- Audit logging
+Build a multi-agent system that performs governance checks on a data pipeline, including:
 
-## Installation
-```bash
-pip install data-governance-agent
-```
+- Schema validation
+- Data quality checks
+- PII and policy enforcement
+- Lineage tracking
+- Governance reporting
 
-## Quick Start
-```python
-from data_governance_agent import Agent
+This repository is structured to separate:
 
-agent = Agent()
-agent.enforce_policies()
-```
-
-## Configuration
-Create a `config.yaml` file with your governance rules and data sources.
-
-## Usage
-See [documentation](./docs) for detailed usage examples.
-
-## Contributing
-Contributions welcome. Please follow our code standards.
-
-## License
-MIT License
+- `src/pipeline/` – The sample data pipeline (ETL, schemas, configs).
+- `src/agents/` – Agent definitions (coordinator, schema agent, DQ agent, etc.).
+- `src/tools/` – Tools used by agents (file access, schema validation, etc.).
+- `data/` – Raw, schema, and curated data.
+- `config/` – Pipeline configuration and rules.
+- `reports/` – Governance run reports.
+- `logs/` – Execution logs.
+- `tests/` – Unit tests and evaluation harness.
