@@ -5,7 +5,7 @@ High-level coordinator that runs the full governance pipeline
 using the other agents.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -35,11 +35,14 @@ class CoordinatorAgent(BaseAgent):
         self.pii_agent = PiiPolicyAgent()
         self.summary_agent = RunSummaryAgent()
 
-    def run(self) -> Dict[str, Any]:
+    def run(self, config_override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         print("=== CoordinatorAgent: Starting governance pipeline run ===")
 
         # Load config and metadata
-        config = load_config()
+        if config_override is not None:
+            config = config_override
+        else:
+            config = load_config()
         events_schema = load_schema("events_schema.json")
 
         events_filename = config["sources"]["events"]["filename"]
