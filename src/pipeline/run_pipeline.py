@@ -18,6 +18,9 @@ from typing import Dict, Any
 import pandas as pd
 import yaml
 
+from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
+
+
 BASE_DIR = pathlib.Path(__file__).resolve().parents[2]  # repo root
 DATA_DIR = BASE_DIR / "data"
 CONFIG_DIR = BASE_DIR / "config"
@@ -62,8 +65,12 @@ def main() -> None:
     print(f"\nLoaded raw events data from {events_filename}")
     print(f"Rows: {len(df_events)}, Columns: {list(df_events.columns)}")
 
+    # Stage 2 - Schema Validation
+    print("\nRunning schema validation...")
+    schema_results = validate_schema(df_events, events_schema)
+    print_schema_validation_results(schema_results)
+
     # Placeholder for future stages:
-    # - Schema validation
     # - Data quality checks
     # - Policy/PII enforcement
     # - Transformations
