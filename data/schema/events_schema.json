@@ -1,0 +1,45 @@
+{
+  "name": "events",
+  "description": "Schema for raw user activity events.",
+  "columns": [
+    {
+      "name": "event_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "course_id",
+      "type": "string",
+      "required": false
+    },
+    {
+      "name": "event_type",
+      "type": "string",
+      "required": true,
+      "allowed_values": ["view", "submit", "login"]
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "required": true,
+      "format": "iso8601"
+    },
+    {
+      "name": "ip_address",
+      "type": "string",
+      "required": false,
+      "pii": true
+    },
+    {
+      "name": "user_email",
+      "type": "string",
+      "required": false,
+      "pii": true
+    }
+  ]
+}

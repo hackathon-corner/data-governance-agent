@@ -1,0 +1,32 @@
+run_id: "local-dev"
+description: "Sample pipeline run for Data Governance Agent capstone."
+
+sources:
+  events:
+    filename: "events_sample.csv"
+    table_name: "raw_events"
+
+targets:
+  events_curated:
+    filename: "analytics_events.csv"
+    table_name: "analytics_events"
+
+data_quality:
+  max_null_fraction_per_column: 0.2  # 20%
+  unique_keys:
+    - "event_id"
+  non_null_columns:
+    - "event_id"
+    - "user_id"
+    - "timestamp"
+  allowed_event_types:
+    - "view"
+    - "submit"
+    - "login"
+
+policy:
+  pii_columns:
+    - "user_email"
+    - "ip_address"
+  pii_allowed_in_raw: true
+  pii_allowed_in_curated: false
