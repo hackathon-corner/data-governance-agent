@@ -3,7 +3,7 @@ description: "Sample pipeline run for Data Governance Agent capstone."
 
 sources:
   events:
-    filename: "events_dq_bad_sample.csv"
+    filename: "events_sample.csv"
     table_name: "raw_events"
 
 targets:
