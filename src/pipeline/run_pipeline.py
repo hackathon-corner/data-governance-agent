@@ -19,6 +19,9 @@ import pandas as pd
 import yaml
 
 from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
+from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
+from src.pipeline.data_quality import validate_data_quality, print_data_quality_results
+
 
 
 BASE_DIR = pathlib.Path(__file__).resolve().parents[2]  # repo root
@@ -70,14 +73,20 @@ def main() -> None:
     schema_results = validate_schema(df_events, events_schema)
     print_schema_validation_results(schema_results)
 
+    # ---- Stage 3: Data Quality Checks ----
+    dq_config = config.get("data_quality", {})
+    print("\nRunning data quality checks...")
+    dq_results = validate_data_quality(df_events, dq_config)
+    print_data_quality_results(dq_results)
+
+
     # Placeholder for future stages:
-    # - Data quality checks
     # - Policy/PII enforcement
     # - Transformations
     # - Load to curated
     # - Lineage & governance report
 
-    print("\nPipeline skeleton executed successfully (no governance checks yet).")
+    print("\nPipeline executed successfully with schema and data quality checks.")
 
 
 if __name__ == "__main__":

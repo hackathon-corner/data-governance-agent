@@ -2,4 +2,4 @@ event_id,user_id,course_id,event_type,timestamp,ip_address,user_email
 e1,u1,c1,view,2025-11-15T10:00:00Z,192.168.0.1,user1@example.com
 e2,u2,c1,submit,2025-11-15T10:05:00Z,192.168.0.2,user2@example.com
 e3,u3,c2,login,2025-11-15T10:10:00Z,192.168.0.3,user3@example.com
-e4,u4,,view,2025-11-15T10:15:00Z,192.168.0.4,user4@example.com
+e4,u4,c2,view,2025-11-15T10:15:00Z,192.168.0.4,user4@example.com
