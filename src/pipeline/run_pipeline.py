@@ -22,6 +22,8 @@ from src.pipeline.schema_validator import validate_schema, print_schema_validati
 from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
 from src.pipeline.data_quality import validate_data_quality, print_data_quality_results
 from src.pipeline.policy_enforcement import enforce_pii_policy, print_pii_policy_results
+from src.pipeline.run_summary import build_run_summary, save_run_summary, print_run_summary
+
 
 
 
@@ -99,14 +101,27 @@ def main() -> None:
     curated_filename = config["targets"]["events_curated"]["filename"]
     save_events_curated(df_curated, curated_filename)
 
-    print("\nPipeline executed successfully with schema, data quality, and PII/policy checks.")
+    # ---- Stage 6: Build run summary & lineage ----
+    rows_in = len(df_events)
+    rows_out = len(df_curated)
 
+    summary = build_run_summary(
+        config=config,
+        schema_results=schema_results,
+        dq_results=dq_results,
+        pii_results=pii_results,
+        source_filename=events_filename,
+        curated_filename=curated_filename,
+        rows_in=rows_in,
+        rows_out=rows_out,
+    )
 
+    summary_path = save_run_summary(summary)
+    print_run_summary(summary)
+    print(f"\nRun summary saved to: {summary_path}")
 
-    # Placeholder for future stages:
-    # - Transformations
-    # - Load to curated
-    # - Lineage & governance report
+    print("\nPipeline executed successfully with schema, data quality, PII/policy checks, and run summary.")
+
 
 
 if __name__ == "__main__":
