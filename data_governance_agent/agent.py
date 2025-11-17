@@ -9,68 +9,11 @@ from src.agents.schema_agent import SchemaValidationAgent
 from src.agents.dq_agent import DataQualityAgent
 from src.agents.pii_policy_agent import PiiPolicyAgent
 from src.pipeline.run_pipeline import load_config, load_schema, load_events_raw
+from src.pipeline.report_markdown import (build_markdown_from_summary, save_markdown_report)
 
 
 GEMINI_MODEL = "gemini-2.5-flash"
 
-
-# def run_governance_pipeline() -> dict:
-#     """
-#     ADK tool:
-#     Runs the full governance pipeline (schema, DQ, PII, summary)
-#     and returns a compact result for the LLM to reason about.
-#     """
-#     coordinator = CoordinatorAgent()
-#     result = coordinator.run()
-
-#     summary = result["summary"]
-#     checks = summary["checks"]
-
-#     return {
-#         "status": "success",
-#         "overall_passed": summary["overall_passed"],
-#         "schema_passed": checks["schema"]["passed"],
-#         "dq_passed": checks["data_quality"]["passed"],
-#         "pii_passed": checks["pii_policy"]["passed"],
-#         "rows_in": summary["lineage"]["source"]["rows_in"],
-#         "rows_out": summary["lineage"]["target"]["rows_out"],
-#         "source_filename": summary["lineage"]["source"]["filename"],
-#         "target_filename": summary["lineage"]["target"]["filename"],
-#         "schema_issues": {
-#             "missing_columns": checks["schema"]["missing_columns"],
-#             "extra_columns": checks["schema"]["extra_columns"],
-#             "invalid_values": checks["schema"]["invalid_values"],
-#         },
-#         "dq_issues": {
-#             "columns_exceeding_null_threshold": checks["data_quality"]["columns_exceeding_null_threshold"],
-#             "non_null_violations": checks["data_quality"]["non_null_violations"],
-#             "unique_key_violations": checks["data_quality"]["unique_key_violations"],
-#             "invalid_event_types": checks["data_quality"]["invalid_event_types"],
-#         },
-#         "pii_issues": {
-#             "detected_pii_columns": checks["pii_policy"]["detected_pii_columns"],
-#             "removed_pii_columns": checks["pii_policy"]["removed_pii_columns"],
-#             "remaining_pii_in_curated": checks["pii_policy"]["remaining_pii_in_curated"],
-#         },
-#         "note": "See JSON summary in the reports/ directory for full details.",
-#     }
-
-
-# root_agent = Agent(
-#     model="gemini-2.5-flash",
-#     name="data_governance_root",
-#     description="Root agent for the Data Pipeline Governance capstone.",
-#     instruction=(
-#         "You are a data governance assistant for an event analytics pipeline. "
-#         "Use the 'run_governance_pipeline' tool to execute schema, data quality, "
-#         "and PII checks. Then:\n"
-#         "1) Clearly state whether the run PASSED or FAILED overall.\n"
-#         "2) If it failed, summarize the key schema/data-quality/PII issues.\n"
-#         "3) Suggest concrete next steps to fix the data or configuration.\n"
-#         "Keep explanations concise and non-technical when possible."
-#     ),
-#     tools=[run_governance_pipeline],
-# )
 
 def run_full_governance_pipeline() -> dict:
     coordinator = CoordinatorAgent()
@@ -152,6 +95,27 @@ def run_pii_policy_checks_only() -> dict:
         "remaining_pii_in_curated": results["remaining_pii_in_curated"],
         "source_filename": events_filename,
     }
+
+def generate_markdown_report() -> dict:
+    """
+    ADK tool: runs the full governance pipeline, builds a markdown report,
+    saves it to disk, and returns a small summary.
+    """
+    coordinator = CoordinatorAgent()
+    result = coordinator.run()
+    summary = result["summary"]
+
+    markdown = build_markdown_from_summary(summary)
+    report_path = save_markdown_report(markdown)
+
+    return {
+        "status": "success",
+        "overall_passed": summary.get("overall_passed", False),
+        "report_path": report_path,
+        # Include a short preview so the LLM can quote it if helpful
+        "markdown_preview": "\n".join(markdown.splitlines()[:40]),
+    }
+
 
 schema_llm_agent = LlmAgent(
     name="SchemaAgent",
@@ -277,6 +241,8 @@ root_agent = LlmAgent(
         "After calling a workflow or tool, explain the results clearly and suggest "
         "concrete next steps. Do not try to add sub-agents yourself; use the "
         "provided tools and the GovernanceWorkflow sub-agent."
+        "- If the user asks to 'generate a report', 'save a markdown report', "
+        "or similar, call the 'generate_markdown_report' tool.\n"
     ),
     # Tools the root can call directly for targeted checks
     tools=[
@@ -284,6 +250,7 @@ root_agent = LlmAgent(
         run_schema_checks_only,
         run_data_quality_checks_only,
         run_pii_policy_checks_only,
+        generate_markdown_report,
     ],
     # IMPORTANT: only one sub-agent here, to avoid multiple parents
     sub_agents=[
