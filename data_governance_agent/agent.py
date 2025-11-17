@@ -2,7 +2,7 @@ from google.adk.agents.llm_agent import Agent
 
 # Import your existing coordinator that runs the whole pipeline
 from src.agents.coordinator_agent import CoordinatorAgent
-from google.adk.agents import LlmAgent  # we'll use SequentialAgent later
+from google.adk.agents import LlmAgent, SequentialAgent
 
 from src.agents.coordinator_agent import CoordinatorAgent
 from src.agents.schema_agent import SchemaValidationAgent
@@ -241,22 +241,54 @@ report_llm_agent = LlmAgent(
     output_key="governance_report",
 )
 
-root_agent = LlmAgent(
-    model=GEMINI_MODEL,
-    name="data_governance_root",
-    description="Root agent for the Data Pipeline Governance capstone.",
-    instruction=(
-        "You are a data governance assistant for an event analytics pipeline.\n"
-        "You currently have access to tools that can run the full pipeline or "
-        "individual checks. For now, choose the best single tool to answer "
-        "the user's question (full pipeline vs schema-only vs DQ-only vs PII-only), "
-        "call it, and then explain the result in clear language."
+governance_workflow = SequentialAgent(
+    name="GovernanceWorkflow",
+    description=(
+        "Runs the full multi-step governance workflow in order: "
+        "schema validation → data quality validation → PII policy checks → final reporting. "
+        "Each sub-agent writes its results to session.state."
     ),
+    sub_agents=[
+        schema_llm_agent,
+        dq_llm_agent,
+        pii_llm_agent,
+        report_llm_agent,
+    ],
+)
+
+root_agent = LlmAgent(
+    name="DataGovernanceRoot",
+    model=GEMINI_MODEL,
+    description=(
+        "Root coordinator agent for the data governance pipeline. "
+        "You decide whether to run the full multi-agent workflow or call "
+        "individual tools based on the user's request."
+    ),
+    instruction=(
+        "You coordinate a data governance workflow for an event analytics pipeline.\n"
+        "- If the user asks to 'run the full pipeline', 'run full governance', "
+        "'validate everything', or similar, delegate to the 'GovernanceWorkflow' "
+        "sequential agent.\n"
+        "- If the user only asks about schema, call the 'run_schema_checks_only' tool.\n"
+        "- If the user only asks about data quality, call the "
+        "'run_data_quality_checks_only' tool.\n"
+        "- If the user only asks about PII or privacy, call the "
+        "'run_pii_policy_checks_only' tool.\n"
+        "After calling a workflow or tool, explain the results clearly and suggest "
+        "concrete next steps. Do not try to add sub-agents yourself; use the "
+        "provided tools and the GovernanceWorkflow sub-agent."
+    ),
+    # Tools the root can call directly for targeted checks
     tools=[
-        run_full_governance_pipeline,
+        run_full_governance_pipeline,      # optional: a single-call alternative
         run_schema_checks_only,
         run_data_quality_checks_only,
         run_pii_policy_checks_only,
     ],
+    # IMPORTANT: only one sub-agent here, to avoid multiple parents
+    sub_agents=[
+        governance_workflow,
+    ],
 )
+
 
