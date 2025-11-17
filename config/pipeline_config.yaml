@@ -3,8 +3,14 @@ description: "Sample pipeline run for Data Governance Agent capstone."
 
 sources:
   events:
-    filename: "events_sample.csv"
+    filename: "events_rich_sample.csv"
     table_name: "raw_events"
+  users:
+    filename: "users_sample.csv"
+    table_name: "users"
+  courses:
+    filename: "courses_sample.csv"
+    table_name: "courses"
 
 targets:
   events_curated:
@@ -12,26 +18,22 @@ targets:
     table_name: "analytics_events"
 
 data_quality:
-  max_null_fraction_per_column: 0.2  # 20%
-  unique_keys:
-    - "event_id"
-  non_null_columns:
-    - "event_id"
-    - "user_id"
-    - "timestamp"
-  allowed_event_types:
-    - "view"
-    - "submit"
-    - "login"
-  null_threshold_columns:
-    - "event_id"
-    - "user_id"
-    - "event_type"
-    - "timestamp"
+  unique_keys: ["event_id"]
+  non_null_columns: ["event_id", "user_id", "timestamp"]
+  allowed_event_types: ["view", "submit", "login"]
+
+schema:
+  foreign_keys:
+    - table: "events"
+      column: "user_id"
+      ref_table: "users"
+      ref_column: "user_id"
+    - table: "events"
+      column: "course_id"
+      ref_table: "courses"
+      ref_column: "course_id"
 
 policy:
-  pii_columns:
-    - "user_email"
-    - "ip_address"
+  pii_columns: ["user_email", "ip_address"]
   pii_allowed_in_raw: true
   pii_allowed_in_curated: false

@@ -19,10 +19,10 @@ from src.agents.run_summary_agent import RunSummaryAgent
 from src.pipeline.run_pipeline import (
     load_config,
     load_schema,
-    load_events_raw,
     save_events_curated,
+    load_all_sources
 )
-
+from src.pipeline.foreign_keys import validate_foreign_keys
 
 class CoordinatorAgent(BaseAgent):
     def __init__(self) -> None:
@@ -38,20 +38,23 @@ class CoordinatorAgent(BaseAgent):
     def run(self, config_override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         print("=== CoordinatorAgent: Starting governance pipeline run ===")
 
-        # Load config and metadata
+        # Load config
         if config_override is not None:
             config = config_override
         else:
             config = load_config()
-        events_schema = load_schema("events_schema.json")
 
+        # Load all sources
+        dfs = load_all_sources(config)
+        df_events = dfs["events"]
+
+        events_schema = load_schema("events_schema.json")
         events_filename = config["sources"]["events"]["filename"]
-        df_events: pd.DataFrame = load_events_raw(events_filename)
 
         print(f"\nLoaded raw events data from {events_filename}")
         print(f"Rows: {len(df_events)}, Columns: {list(df_events.columns)}")
 
-        # Schema validation
+        # Schema
         schema_results = self.schema_agent.run(df=df_events, schema=events_schema)
 
         # Data quality
@@ -65,18 +68,23 @@ class CoordinatorAgent(BaseAgent):
         )
         df_curated = pii_results["df_curated"]
 
+        # Foreign keys
+        fk_config = config.get("schema", {}).get("foreign_keys", [])
+        fk_results = validate_foreign_keys(dfs, fk_config)
+
         # Save curated
         curated_filename = config["targets"]["events_curated"]["filename"]
         save_events_curated(df_curated, curated_filename)
 
-        # Run summary / lineage
         rows_in = len(df_events)
         rows_out = len(df_curated)
+
         summary_result = self.summary_agent.run(
             config=config,
             schema_results=schema_results,
             dq_results=dq_results,
             pii_results=pii_results,
+            fk_results=fk_results,
             source_filename=events_filename,
             curated_filename=curated_filename,
             rows_in=rows_in,
@@ -95,5 +103,8 @@ class CoordinatorAgent(BaseAgent):
             "schema_results": schema_results,
             "dq_results": dq_results,
             "pii_results": pii_results,
+            "fk_results": fk_results,
             "summary": summary_result["summary"],
         }
+
+

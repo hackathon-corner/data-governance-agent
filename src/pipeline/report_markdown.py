@@ -103,6 +103,25 @@ def build_markdown_from_summary(summary: Dict[str, Any]) -> str:
         lines.append("No data quality issues detected.")
     lines.append("")
 
+    fk = checks.get("foreign_keys", {})
+
+    lines.append("## Cross-Table / Foreign Key Checks")
+    lines.append(f"- **Status:** {'✅ Passed' if fk.get('passed') else '❌ Failed'}")
+    lines.append("")
+    violations = fk.get("violations") or []
+    if violations:
+        lines.append("- **Violations:**")
+        for v in violations:
+            lines.append(
+                f"  - `{v['table']}.{v['column']}` has values not found in "
+                f"`{v['ref_table']}.{v['ref_column']}` "
+                f"(examples: {v['missing_keys']})"
+            )
+    else:
+        lines.append("No foreign key violations detected.")
+    lines.append("")
+
+
     # PII / policy section
     lines.append("## PII / Policy Enforcement")
     lines.append(f"- **Status:** {'✅ Passed' if pii.get('passed') else '❌ Failed'}")
