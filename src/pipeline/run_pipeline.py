@@ -89,15 +89,56 @@ def main():
     dfs = load_all_sources(config)
     df_raw = dfs["events"]  # main fact table
 
+    # events_schema = load_schema("events_schema.json")
+    # source_filename = config["sources"]["events"]["filename"]
+
+    # print(f"Loaded raw events data from {source_filename}")
+    # print(f"Rows: {len(df_raw)}, Columns: {list(df_raw.columns)}")
+
+    # # === Schema validation (events only, for CLI path) ===
+    # schema_agent = SchemaValidationAgent()
+    # schema_results = schema_agent.run(df=df_raw, schema=events_schema)
+
+    # === Load all source tables ===
+    dfs = load_all_sources(config)
+    df_events = dfs["events"]
+    df_users = dfs.get("users")
+    df_courses = dfs.get("courses")
+
     events_schema = load_schema("events_schema.json")
+    users_schema = load_schema("users_schema.json")
+    courses_schema = load_schema("courses_schema.json")
+
     source_filename = config["sources"]["events"]["filename"]
 
     print(f"Loaded raw events data from {source_filename}")
-    print(f"Rows: {len(df_raw)}, Columns: {list(df_raw.columns)}")
+    print(f"Rows: {len(df_events)}, Columns: {list(df_events.columns)}")
 
-    # === Schema validation (events only, for CLI path) ===
     schema_agent = SchemaValidationAgent()
-    schema_results = schema_agent.run(df=df_raw, schema=events_schema)
+
+    schema_tables = {}
+
+    # Events
+    events_schema_result = schema_agent.run(df=df_events, schema=events_schema)
+    schema_tables["events"] = events_schema_result
+
+    # Users (if present)
+    if df_users is not None:
+        users_schema_result = schema_agent.run(df=df_users, schema=users_schema)
+        schema_tables["users"] = users_schema_result
+
+    # Courses (if present)
+    if df_courses is not None:
+        courses_schema_result = schema_agent.run(df=df_courses, schema=courses_schema)
+        schema_tables["courses"] = courses_schema_result
+
+    schema_passed = all(tbl.get("passed") for tbl in schema_tables.values())
+
+    schema_results = {
+        "passed": schema_passed,
+        "tables": schema_tables,
+    }
+
 
     # === Data quality ===
     dq_config = config.get("data_quality", {})
@@ -120,7 +161,7 @@ def main():
     curated_filename = config["targets"]["events_curated"]["filename"]
     save_events_curated(df_curated, curated_filename)
 
-    rows_in = len(df_raw)
+    rows_in = len(df_events)
     rows_out = len(df_curated)
 
     # Build + save summary

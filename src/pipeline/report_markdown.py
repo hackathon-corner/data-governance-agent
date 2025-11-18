@@ -48,7 +48,17 @@ def build_markdown_from_summary(summary: Dict[str, Any]) -> str:
 
     # Schema section
     lines.append("## Schema Validation")
-    lines.append(f"- **Status:** {'✅ Passed' if schema.get('passed') else '❌ Failed'}")
+    lines.append(f"- **Overall status:** {'✅ Passed' if schema.get('passed') else '❌ Failed'}")
+    lines.append("")
+
+    tables = schema.get("tables") or {}
+    if tables:
+        lines.append("### Per-table schema status")
+        for table_name, table_result in tables.items():
+            t_status = "✅ Passed" if table_result.get("passed") else "❌ Failed"
+            lines.append(f"- **{table_name}**: {t_status}")
+        lines.append("")
+        
     missing_cols = schema.get("missing_columns") or []
     extra_cols = schema.get("extra_columns") or []
     invalid_vals = schema.get("invalid_values") or {}

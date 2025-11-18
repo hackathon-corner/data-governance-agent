@@ -150,17 +150,25 @@ class RunSummaryAgent:
         }
 
 def print_run_summary(summary: Dict[str, Any]) -> None:
-    """
-    Convenience helper for CLI runs: print a short textual summary
-    of the governance checks and overall status.
-    """
     print("\n=== Governance Run Summary ===")
 
     checks = summary.get("checks", {})
-    for name, result in checks.items():
-        # name will be 'schema', 'data_quality', 'pii_policy', 'foreign_keys', etc.
+
+    # Schema (with per-table breakdown)
+    schema = checks.get("schema", {})
+    schema_status = "PASSED" if schema.get("passed") else "FAILED"
+    print(f"- schema: {schema_status}")
+    tables = schema.get("tables") or {}
+    for table_name, table_result in tables.items():
+        t_status = "PASSED" if table_result.get("passed") else "FAILED"
+        print(f"    - {table_name}: {t_status}")
+
+    # Other checks
+    for name in ("data_quality", "pii_policy", "foreign_keys"):
+        result = checks.get(name, {})
         status = "PASSED" if result.get("passed") else "FAILED"
         print(f"- {name}: {status}")
 
     overall = summary.get("overall_passed")
     print(f"\nOverall passed: {overall}")
+
