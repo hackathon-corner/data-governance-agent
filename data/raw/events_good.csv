@@ -1,0 +1,9 @@
+event_id,user_id,course_id,event_type,timestamp,ip_address,user_email
+e1,u1,c1,page_view,2025-01-15T09:00:00Z,10.0.0.1,alice@example.edu
+e2,u2,c1,video_play,2025-01-15T09:05:00Z,10.0.0.2,bob@example.edu
+e3,u1,c2,quiz_start,2025-01-15T09:10:00Z,10.0.0.3,alice@example.edu
+e4,u3,c2,quiz_submit,2025-01-15T09:15:00Z,10.0.0.4,carol@example.edu
+e5,u4,c3,page_view,2025-01-15T09:20:00Z,10.0.0.5,david@example.edu
+e6,u2,c3,assignment_submit,2025-01-15T09:25:00Z,10.0.0.6,bob@example.edu
+e7,u3,c1,discussion_post,2025-01-15T09:30:00Z,10.0.0.7,carol@example.edu
+e8,u4,c2,video_play,2025-01-15T09:35:00Z,10.0.0.8,david@example.edu

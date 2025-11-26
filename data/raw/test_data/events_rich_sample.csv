@@ -5,5 +5,3 @@ e3,u3,c2,login,2025-01-02T09:30:00Z,10.0.0.3,u3@example.edu
 e4,u4,cX,view,2025-01-02T10:15:00Z,10.0.0.4,u4@example.edu
 e5,uX,c1,click,2025-01-03T12:00:00Z,10.0.0.5,uX@example.edu
 e6,u2,,view,2025-01-03T13:00:00Z,10.0.0.2,u2@example.edu
-e7,u3,,view,2025-01-03T13:00:00Z,10.0.0.2,u3@example.edu
-e8,u3,,view,2025-01-03T13:00:00Z,10.0.0.2,u3@example.edu

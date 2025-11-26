@@ -1,0 +1,7 @@
+event_id,user_id,course_id,event_type,timestamp,ip_address,user_email
+e1,u1,c1,page_view,2025-01-01T09:00:00Z,10.0.0.1,alice@example.edu
+e2,u2,,page_view,2025-01-01T09:05:00Z,10.0.0.2,bob@example.edu
+e3,u3,c2,quiz_start,2025-01-01T09:10:00Z,10.0.0.3,carol@example.edu
+e4,u3,c2,quiz_start,2025-01-01T09:15:00Z,10.0.0.3,carol@example.edu
+e5,u1,c1,discussion_post,2025-01-01T09:20:00Z,10.0.0.1,alice@example.edu
+e5,u1,c1,discussion_post,2025-01-01T09:25:00Z,10.0.0.1,alice@example.edu

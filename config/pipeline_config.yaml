@@ -3,24 +3,20 @@ description: "Sample pipeline run for Data Governance Agent capstone."
 
 sources:
   events:
-    filename: "events_rich_sample.csv"
-    table_name: "raw_events"
+    filename: "events_good.csv"
   users:
-    filename: "users_sample.csv"
-    table_name: "users"
+    filename: "users_good.csv"
   courses:
-    filename: "courses_sample.csv"
-    table_name: "courses"
+    filename: "courses_good.csv"
 
 targets:
   events_curated:
     filename: "analytics_events.csv"
-    table_name: "analytics_events"
 
 data_quality:
   unique_keys: ["event_id"]
   non_null_columns: ["event_id", "user_id", "timestamp"]
-  allowed_event_types: ["view", "submit", "login"]
+  allowed_event_types: ["page_view", "assignment_submit", "discussion_post", "quiz_start", "quiz_submit","video_play"]
 
 schema:
   foreign_keys:
