@@ -11,6 +11,8 @@ from src.agents.pii_policy_agent import PiiPolicyAgent
 from src.pipeline.run_pipeline import load_config, load_schema, load_events_raw
 from src.pipeline.report_markdown import (build_markdown_from_summary, save_markdown_report)
 from src.agents.run_summary_agent import generate_markdown_report
+from src.pipeline.auto_runner import auto_run_once
+
 
 
 
@@ -307,6 +309,11 @@ root_agent = LlmAgent(
         "'run_pii_policy_checks_only' tool.\n"
         "- If the user asks to 'generate a report', 'save a markdown report', "
         "or similar, call the 'generate_markdown_report' tool.\n"
+        "- If the user asks to 'auto-run', 'check for new data and run', or "
+        "similar, call the 'auto_run_once' tool. This should be treated as an "
+        "idempotent, non-interactive run: if there is no new data, just report "
+        "that fact; if there is new data, run the pipeline and return where the "
+        "report was saved.\n"
         "After calling a workflow or tool, explain the results clearly and suggest "
         "concrete next steps. Do not try to add sub-agents yourself; use the "
         "provided tools and the GovernanceWorkflow sub-agent."
@@ -317,6 +324,7 @@ root_agent = LlmAgent(
         run_data_quality_checks_only,
         run_pii_policy_checks_only,
         generate_markdown_report,   # ← now imported from run_summary_agent.py
+        auto_run_once,              # ← now imported from auto_runner.py
     ],
     sub_agents=[governance_workflow],
 )
