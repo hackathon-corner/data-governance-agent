@@ -176,7 +176,7 @@ def main():
         rows_in,
         rows_out,
     )
-
+    print(json.dumps(summary, indent=2))
     print_run_summary(summary)
     save_run_summary(summary)
 
