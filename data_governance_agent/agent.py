@@ -10,6 +10,8 @@ from src.agents.dq_agent import DataQualityAgent
 from src.agents.pii_policy_agent import PiiPolicyAgent
 from src.pipeline.run_pipeline import load_config, load_schema, load_events_raw
 from src.pipeline.report_markdown import (build_markdown_from_summary, save_markdown_report)
+from src.agents.run_summary_agent import generate_markdown_report
+
 
 
 GEMINI_MODEL = "gemini-2.0-flash-lite"
@@ -191,26 +193,6 @@ def run_pii_policy_checks_only() -> dict:
         "source_filename": events_filename,
     }
 
-def generate_markdown_report() -> dict:
-    """
-    ADK tool: runs the full governance pipeline, builds a markdown report,
-    saves it to disk, and returns a small summary.
-    """
-    coordinator = CoordinatorAgent()
-    result = coordinator.run()
-    summary = result["summary"]
-
-    markdown = build_markdown_from_summary(summary)
-    report_path = save_markdown_report(markdown)
-
-    return {
-        "status": "success",
-        "overall_passed": summary.get("overall_passed", False),
-        "report_path": report_path,
-        # Include a short preview so the LLM can quote it if helpful
-        "markdown_preview": "\n".join(markdown.splitlines()[:40]),
-    }
-
 
 schema_llm_agent = LlmAgent(
     name="SchemaAgent",
@@ -323,24 +305,20 @@ root_agent = LlmAgent(
         "'run_data_quality_checks_only' tool.\n"
         "- If the user only asks about PII or privacy, call the "
         "'run_pii_policy_checks_only' tool.\n"
+        "- If the user asks to 'generate a report', 'save a markdown report', "
+        "or similar, call the 'generate_markdown_report' tool.\n"
         "After calling a workflow or tool, explain the results clearly and suggest "
         "concrete next steps. Do not try to add sub-agents yourself; use the "
         "provided tools and the GovernanceWorkflow sub-agent."
-        "- If the user asks to 'generate a report', 'save a markdown report', "
-        "or similar, call the 'generate_markdown_report' tool.\n"
     ),
-    # Tools the root can call directly for targeted checks
     tools=[
-        run_full_governance_pipeline,      # optional: a single-call alternative
+        run_full_governance_pipeline,
         run_schema_checks_only,
         run_data_quality_checks_only,
         run_pii_policy_checks_only,
-        generate_markdown_report,
+        generate_markdown_report,   # ← now imported from run_summary_agent.py
     ],
-    # IMPORTANT: only one sub-agent here, to avoid multiple parents
-    sub_agents=[
-        governance_workflow,
-    ],
+    sub_agents=[governance_workflow],
 )
 
 

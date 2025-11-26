@@ -13,7 +13,7 @@ from src.agents.base_agent import BaseAgent
 from src.agents.schema_agent import SchemaValidationAgent
 from src.agents.dq_agent import DataQualityAgent
 from src.agents.pii_policy_agent import PiiPolicyAgent
-from src.agents.run_summary_agent import RunSummaryAgent
+
 
 # Reuse the I/O helpers from run_pipeline
 from src.pipeline.run_pipeline import (
@@ -33,7 +33,7 @@ class CoordinatorAgent(BaseAgent):
         self.schema_agent = SchemaValidationAgent()
         self.dq_agent = DataQualityAgent()
         self.pii_agent = PiiPolicyAgent()
-        self.summary_agent = RunSummaryAgent()
+
 
     def run(self, config_override: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         print("=== CoordinatorAgent: Starting governance pipeline run ===")
@@ -114,24 +114,7 @@ class CoordinatorAgent(BaseAgent):
         rows_in = len(df_events)
         rows_out = len(df_curated)
 
-        summary_result = self.summary_agent.run(
-            config=config,
-            schema_results=schema_results,
-            dq_results=dq_results,
-            pii_results=pii_results,
-            fk_results=fk_results,
-            source_filename=events_filename,
-            curated_filename=curated_filename,
-            rows_in=rows_in,
-            rows_out=rows_out,
-        )
 
-        overall_passed = summary_result["summary"]["overall_passed"]
-
-        print(
-            "\n=== CoordinatorAgent: Finished run "
-            f"(overall_passed={overall_passed}) ==="
-        )
 
         return {
             "config": config,
@@ -139,7 +122,6 @@ class CoordinatorAgent(BaseAgent):
             "dq_results": dq_results,
             "pii_results": pii_results,
             "fk_results": fk_results,
-            "summary": summary_result["summary"],
         }
 
 
