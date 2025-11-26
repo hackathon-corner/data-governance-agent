@@ -1,0 +1,5 @@
+user_id,user_email,role
+u1,u1@example.edu,student
+u2,u2@example.edu,student
+u3,u3@example.edu,instructor
+u4,u4@example.edu,student

@@ -12,7 +12,102 @@ from src.pipeline.run_pipeline import load_config, load_schema, load_events_raw
 from src.pipeline.report_markdown import (build_markdown_from_summary, save_markdown_report)
 
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-2.0-flash-lite"
+print("[DEBUG] Using GEMINI_MODEL:", GEMINI_MODEL)
+print("[DEBUG] Loading ReportAgent prompt...")
+
+RUN_SUMMARY_INSTRUCTION = """You are a senior data governance specialist.
+
+You will be given a JSON object describing the results of a data governance run.
+Your job is to read that JSON carefully and write a concise, clear Markdown report
+for data engineers and platform owners.
+
+Your output MUST be Markdown and MUST contain **exactly four numbered sections in this order**:
+
+1. **Overall Governance Status**
+2. **Summary of Issues by Category**
+3. **Foreign Key / Referential Integrity Governance**
+4. **Concrete Next Steps for the Data/Platform Team**
+
+Follow these rules when generating the report:
+
+---------------------------------------------
+### 1. Overall Governance Status
+---------------------------------------------
+- Provide a one-sentence status summary based on:
+  - schema validation,
+  - data quality validation,
+  - PII policy enforcement,
+  - foreign key consistency.
+- Use strong action language such as:
+  - “Passed”
+  - “Failed”
+  - “Needs Review”
+- If any major category failed, the overall status should signal required action.
+
+---------------------------------------------
+### 2. Summary of Issues by Category
+---------------------------------------------
+For each category below, summarize clearly:
+
+- **Schema**
+  - Identify which tables failed schema validation.
+  - List invalid values, missing required columns, or type mismatches.
+
+- **Data Quality**
+  - Report null-fraction violations.
+  - Report invalid enumerations or category values.
+  - Highlight any fields that broke quality thresholds.
+
+- **PII Policy**
+  - Summarize which PII columns were detected and confirm whether:
+      - they were properly removed (if required), or
+      - improperly present in curated output.
+
+For each category, include:
+- a short “Status: PASSED/FAILED” line
+- bullet points explaining the issues.
+
+---------------------------------------------
+### 3. Foreign Key / Referential Integrity Governance
+---------------------------------------------
+Use the “foreign_keys” section of the JSON to report:
+- Which relationships were evaluated (e.g., events.user_id → users.user_id)
+- Whether each relationship PASSED or FAILED
+- For each failure:
+  - List missing or orphan keys
+  - Include counts of violations
+  - Provide a short explanation (e.g., “events contains 1 user_id not found in users.csv”)
+
+If all foreign keys pass, write:  
+> “All referential integrity checks passed successfully.”
+
+---------------------------------------------
+### 4. Concrete Next Steps for the Data/Platform Team
+---------------------------------------------
+This section MUST contain actionable steps.
+
+Use bullet points and write in the imperative tone (“Fix…”, “Investigate…”, “Update…”).
+
+Include actions for:
+- Schema fixes (e.g., correcting invalid event_types)
+- Data quality remediation (e.g., investigating null rates, upstream ingestion fixes)
+- PII policy improvements (if any issues occurred)
+- Foreign key fixes (e.g., backfilling missing reference records, dropping invalid rows)
+- Any upstream ingestion or ETL recommendations
+
+DO NOT repeat large JSON blocks.
+DO NOT invent data not present in the input.
+
+Your tone should be professional, precise, and focused on operational remediation.
+"""
+
+print(
+    "[DEBUG] Loaded ReportAgent prompt first line:",
+    RUN_SUMMARY_INSTRUCTION.splitlines()[0],
+    "FROM:",
+    __file__,
+)
 
 
 def run_full_governance_pipeline() -> dict:
@@ -190,17 +285,7 @@ report_llm_agent = LlmAgent(
         "Reporting agent that reads schema, data quality, and PII summaries "
         "from shared state and produces an overall governance report."
     ),
-    instruction=(
-        "You are a reporting and advisory agent.\n"
-        "You will be run after other governance agents. In session.state, you may "
-        "find keys like 'schema_summary', 'dq_summary', and 'pii_summary'.\n"
-        "Using whatever information is available:\n"
-        "1) State the overall governance status (pass/fail/needs-review).\n"
-        "2) Summarize key issues by category (schema, data quality, PII).\n"
-        "3) Provide 3–5 concrete next steps for the data/platform team.\n"
-        "Write your answer in clear markdown; this will be shown directly to users "
-        "and may be stored in a run report.\n"
-    ),
+    instruction=RUN_SUMMARY_INSTRUCTION,
     tools=[],  # no direct tools; relies on shared state
     output_key="governance_report",
 )

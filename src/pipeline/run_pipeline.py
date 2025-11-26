@@ -18,12 +18,11 @@ from typing import Dict, Any
 import pandas as pd
 import yaml
 
-from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
-from src.pipeline.schema_validator import validate_schema, print_schema_validation_results
-from src.pipeline.data_quality import validate_data_quality, print_data_quality_results
-from src.pipeline.policy_enforcement import enforce_pii_policy, print_pii_policy_results
+from src.agents.dq_agent import DataQualityAgent
+from src.agents.pii_policy_agent import PiiPolicyAgent
+from src.agents.schema_agent import SchemaValidationAgent
 from src.pipeline.run_summary import build_run_summary, save_run_summary, print_run_summary
-
+from src.pipeline.foreign_keys import validate_foreign_keys
 
 
 
@@ -54,6 +53,28 @@ def load_events_raw(filename: str) -> pd.DataFrame:
     events_path = RAW_DIR / filename
     return pd.read_csv(events_path)
 
+def load_all_sources(config: Dict) -> Dict[str, pd.DataFrame]:
+    """
+    Load all configured source tables into a dict:
+    {
+      "events": <DataFrame>,
+      "users": <DataFrame>,
+      "courses": <DataFrame>,
+      ...
+    }
+    """
+    dfs: Dict[str, pd.DataFrame] = {}
+    src_cfg = config.get("sources", {})
+
+    if "events" in src_cfg:
+        dfs["events"] = load_events_raw(src_cfg["events"]["filename"])
+    if "users" in src_cfg:
+        dfs["users"] = load_events_raw(src_cfg["users"]["filename"])
+    if "courses" in src_cfg:
+        dfs["courses"] = load_events_raw(src_cfg["courses"]["filename"])
+
+    return dfs
+
 def save_events_curated(df: pd.DataFrame, filename: str) -> None:
     CURATED_DIR.mkdir(parents=True, exist_ok=True)
     out_path = CURATED_DIR / filename
@@ -61,68 +82,105 @@ def save_events_curated(df: pd.DataFrame, filename: str) -> None:
     print(f"\nSaved curated events data to {out_path}")
 
 
-def main() -> None:
-    print("=== Data Pipeline Governance: Sample Run ===")
-
+def main():
     config = load_config()
-    print("Loaded config:")
-    print(config)
+
+    # Load all source tables
+    dfs = load_all_sources(config)
+    df_raw = dfs["events"]  # main fact table
+
+    # events_schema = load_schema("events_schema.json")
+    # source_filename = config["sources"]["events"]["filename"]
+
+    # print(f"Loaded raw events data from {source_filename}")
+    # print(f"Rows: {len(df_raw)}, Columns: {list(df_raw.columns)}")
+
+    # # === Schema validation (events only, for CLI path) ===
+    # schema_agent = SchemaValidationAgent()
+    # schema_results = schema_agent.run(df=df_raw, schema=events_schema)
+
+    # === Load all source tables ===
+    dfs = load_all_sources(config)
+    df_events = dfs["events"]
+    df_users = dfs.get("users")
+    df_courses = dfs.get("courses")
 
     events_schema = load_schema("events_schema.json")
-    print("\nLoaded events schema:")
-    print(events_schema)
+    users_schema = load_schema("users_schema.json")
+    courses_schema = load_schema("courses_schema.json")
 
-    events_filename = config["sources"]["events"]["filename"]
-    df_events = load_events_raw(events_filename)
+    source_filename = config["sources"]["events"]["filename"]
 
-    print(f"\nLoaded raw events data from {events_filename}")
+    print(f"Loaded raw events data from {source_filename}")
     print(f"Rows: {len(df_events)}, Columns: {list(df_events.columns)}")
 
-    # Stage 2 - Schema Validation
-    print("\nRunning schema validation...")
-    schema_results = validate_schema(df_events, events_schema)
-    print_schema_validation_results(schema_results)
+    schema_agent = SchemaValidationAgent()
 
-    # ---- Stage 3: Data Quality Checks ----
+    schema_tables = {}
+
+    # Events
+    events_schema_result = schema_agent.run(df=df_events, schema=events_schema)
+    schema_tables["events"] = events_schema_result
+
+    # Users (if present)
+    if df_users is not None:
+        users_schema_result = schema_agent.run(df=df_users, schema=users_schema)
+        schema_tables["users"] = users_schema_result
+
+    # Courses (if present)
+    if df_courses is not None:
+        courses_schema_result = schema_agent.run(df=df_courses, schema=courses_schema)
+        schema_tables["courses"] = courses_schema_result
+
+    schema_passed = all(tbl.get("passed") for tbl in schema_tables.values())
+
+    schema_results = {
+        "passed": schema_passed,
+        "tables": schema_tables,
+    }
+
+
+    # === Data quality ===
     dq_config = config.get("data_quality", {})
-    print("\nRunning data quality checks...")
-    dq_results = validate_data_quality(df_events, dq_config)
-    print_data_quality_results(dq_results)
+    dq_agent = DataQualityAgent()
+    dq_results = dq_agent.run(df=df_raw, dq_config=dq_config)
 
-    # ---- Stage 4: PII / Policy Enforcement ----
+    # === PII / policy ===
     policy_config = config.get("policy", {})
-    print("\nRunning PII / policy enforcement...")
-    pii_results = enforce_pii_policy(df_events, events_schema, policy_config)
-    print_pii_policy_results(pii_results)
-
+    pii_agent = PiiPolicyAgent()
+    pii_results = pii_agent.run(
+        df=df_raw, schema=events_schema, policy_config=policy_config
+    )
     df_curated = pii_results["df_curated"]
 
-    # ---- Stage 5: Save curated output ----
+    # === Foreign-key checks (real validation) ===
+    fk_config = config.get("schema", {}).get("foreign_keys", [])
+    fk_results = validate_foreign_keys(dfs, fk_config)
+
+    # Save curated data
     curated_filename = config["targets"]["events_curated"]["filename"]
     save_events_curated(df_curated, curated_filename)
 
-    # ---- Stage 6: Build run summary & lineage ----
     rows_in = len(df_events)
     rows_out = len(df_curated)
 
+    # Build + save summary
     summary = build_run_summary(
-        config=config,
-        schema_results=schema_results,
-        dq_results=dq_results,
-        pii_results=pii_results,
-        source_filename=events_filename,
-        curated_filename=curated_filename,
-        rows_in=rows_in,
-        rows_out=rows_out,
+        config,
+        schema_results,
+        dq_results,
+        pii_results,
+        fk_results,          # real FK results now
+        source_filename,
+        curated_filename,
+        rows_in,
+        rows_out,
     )
-
-    summary_path = save_run_summary(summary)
+    print(json.dumps(summary, indent=2))
     print_run_summary(summary)
-    print(f"\nRun summary saved to: {summary_path}")
-
-    print("\nPipeline executed successfully with schema, data quality, PII/policy checks, and run summary.")
-
+    save_run_summary(summary)
 
 
 if __name__ == "__main__":
     main()
+

@@ -1,0 +1,14 @@
+{
+  "name": "users",
+  "description": "Schema for user master data.",
+  "columns": [
+    { "name": "user_id", "type": "string", "required": true },
+    { "name": "user_email", "type": "string", "required": true },
+    {
+      "name": "role",
+      "type": "string",
+      "required": false,
+      "allowed_values": ["student", "instructor", "ta", "admin"]
+    }
+  ]
+}

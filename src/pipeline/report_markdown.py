@@ -48,7 +48,17 @@ def build_markdown_from_summary(summary: Dict[str, Any]) -> str:
 
     # Schema section
     lines.append("## Schema Validation")
-    lines.append(f"- **Status:** {'✅ Passed' if schema.get('passed') else '❌ Failed'}")
+    lines.append(f"- **Overall status:** {'✅ Passed' if schema.get('passed') else '❌ Failed'}")
+    lines.append("")
+
+    tables = schema.get("tables") or {}
+    if tables:
+        lines.append("### Per-table schema status")
+        for table_name, table_result in tables.items():
+            t_status = "✅ Passed" if table_result.get("passed") else "❌ Failed"
+            lines.append(f"- **{table_name}**: {t_status}")
+        lines.append("")
+        
     missing_cols = schema.get("missing_columns") or []
     extra_cols = schema.get("extra_columns") or []
     invalid_vals = schema.get("invalid_values") or {}
@@ -102,6 +112,25 @@ def build_markdown_from_summary(summary: Dict[str, Any]) -> str:
     if not (null_fracs or exceeding or non_null_viol or unique_viol or invalid_event_types):
         lines.append("No data quality issues detected.")
     lines.append("")
+
+    fk = checks.get("foreign_keys", {})
+
+    lines.append("## Cross-Table / Foreign Key Checks")
+    lines.append(f"- **Status:** {'✅ Passed' if fk.get('passed') else '❌ Failed'}")
+    lines.append("")
+    violations = fk.get("violations") or []
+    if violations:
+        lines.append("- **Violations:**")
+        for v in violations:
+            lines.append(
+                f"  - `{v['table']}.{v['column']}` has values not found in "
+                f"`{v['ref_table']}.{v['ref_column']}` "
+                f"(examples: {v['missing_keys']})"
+            )
+    else:
+        lines.append("No foreign key violations detected.")
+    lines.append("")
+
 
     # PII / policy section
     lines.append("## PII / Policy Enforcement")
