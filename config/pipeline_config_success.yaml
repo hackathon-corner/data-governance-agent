@@ -1,5 +1,5 @@
-run_id: "local-dev"
-description: "Sample pipeline run for Data Governance Agent capstone."
+run_id: "local-success"
+description: "Config for a successful pipeline run (sample passing fixtures)."
 
 sources:
   events:

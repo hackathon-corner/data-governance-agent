@@ -5,10 +5,9 @@
     { "name": "user_id", "type": "string", "required": true },
     { "name": "user_email", "type": "string", "required": true },
     {
-      "name": "role",
+      "name": "full_name",
       "type": "string",
-      "required": false,
-      "allowed_values": ["student", "instructor", "ta", "admin"]
+      "required": true
     }
   ]
 }

@@ -60,9 +60,9 @@ def test_save_markdown_report_creates_file(tmp_path, monkeypatch):
     # so Path("reports") will resolve under tmp_path.
     monkeypatch.chdir(tmp_path)
 
-    path_str = save_markdown_report(md, filename="test_report.md")
+    path = save_markdown_report(md, timestamp="test_report")
 
-    report_file = Path(path_str)
+    report_file = Path(path)
     assert report_file.exists()
     content = report_file.read_text(encoding="utf-8")
     assert "Data Pipeline Governance Report" in content

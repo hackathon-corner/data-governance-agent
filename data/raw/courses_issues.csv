@@ -1,0 +1,5 @@
+course_id,course_name,is_active
+C1,Intro to AI,true
+C2,Data Governance,true
+C3,,true
+C2,Duplicate Course,false

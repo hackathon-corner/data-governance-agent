@@ -16,6 +16,7 @@ import pathlib
 from typing import Dict, Any
 
 import pandas as pd
+import numpy as np
 import yaml
 
 from src.agents.dq_agent import DataQualityAgent
@@ -37,8 +38,14 @@ REPORTS_DIR = BASE_DIR / "reports"
 LOGS_DIR = BASE_DIR / "logs"
 
 
-def load_config() -> Dict[str, Any]:
-    config_path = CONFIG_DIR / "pipeline_config.yaml"
+def load_config(filename: str = "pipeline_config.yaml") -> Dict[str, Any]:
+    """
+    Load pipeline config from the config directory.
+
+    Args:
+        filename: name of the file in the config/ directory (defaults to pipeline_config.yaml)
+    """
+    config_path = CONFIG_DIR / filename
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -176,7 +183,24 @@ def main():
         rows_in,
         rows_out,
     )
-    print(json.dumps(summary, indent=2))
+    def _json_default(obj):
+        """Helper to make our summary JSON-serializable."""
+        # DataFrames → list of dicts
+        if isinstance(obj, pd.DataFrame):
+            return obj.to_dict(orient="records")
+
+        # NumPy scalars/bools → native Python types
+        if isinstance(obj, (np.integer, np.floating, np.bool_)):
+            return obj.item()
+
+        # Sets → lists
+        if isinstance(obj, set):
+            return list(obj)
+
+        # Fallback: string representation
+        return str(obj)
+
+    print(json.dumps(summary, indent=2, default=_json_default))
     print_run_summary(summary)
     save_run_summary(summary)
 

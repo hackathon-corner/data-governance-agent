@@ -1,13 +1,13 @@
-run_id: "local-dev"
-description: "Sample pipeline run for Data Governance Agent capstone."
+run_id: "local-issues"
+description: "Config for a problematic pipeline run to surface schema / DQ / FK issues."
 
 sources:
   events:
-    filename: "events_good.csv"
+    filename: "test_data/events_rich_sample.csv"
   users:
-    filename: "users_good.csv"
+    filename: "test_data/users_sample.csv"
   courses:
-    filename: "courses_good.csv"
+    filename: "test_data/courses_sample.csv"
 
 targets:
   events_curated:
@@ -17,6 +17,8 @@ data_quality:
   unique_keys: ["event_id"]
   non_null_columns: ["event_id", "user_id", "timestamp"]
   allowed_event_types: ["page_view", "assignment_submit", "discussion_post", "quiz_start", "quiz_submit","video_play"]
+  null_threshold_columns: ["course_id"]
+  max_null_fraction_per_column: 0.05
 
 schema:
   foreign_keys:

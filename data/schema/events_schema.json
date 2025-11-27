@@ -21,7 +21,7 @@
       "name": "event_type",
       "type": "string",
       "required": true,
-      "allowed_values": ["view", "submit", "login"]
+      "allowed_values": ["page_view", "assignment_submit", "discussion_post", "quiz_start", "quiz_submit","video_play"]
     },
     {
       "name": "timestamp",

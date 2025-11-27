@@ -1,0 +1,8 @@
+event_id,user_id,course_id,event_type,timestamp,ip_address,user_email
+1,101,C1,video_play,2025-01-01T10:00:00Z,10.0.0.1,alice@example.com
+2,101,C1,click,2025-01-01T10:05:00Z,10.0.0.1,alice@example.com
+3,102,C2,quiz_submit,2025-01-01T11:00:00Z,10.0.0.2,bob@example.com
+4,999,C2,video_play,2025-01-01T11:05:00Z,10.0.0.3,unknown@example.com
+5,103,,video_play,2025-01-01T11:10:00Z,10.0.0.4,
+5,103,C9,view,2025-01-01T11:15:00Z,10.0.0.4,gayathri@example.com
+6,103,C3,video_play,,10.0.0.5,gayathri@example.com

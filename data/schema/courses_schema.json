@@ -4,6 +4,6 @@
   "columns": [
     { "name": "course_id", "type": "string", "required": true },
     { "name": "course_name", "type": "string", "required": true },
-    { "name": "term", "type": "string", "required": false }
+    { "name": "instructor", "type": "string", "required": false }
   ]
 }
