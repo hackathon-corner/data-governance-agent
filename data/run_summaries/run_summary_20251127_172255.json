@@ -1,0 +1,39 @@
+{
+  "run_id": "t-mock",
+  "description": "mock run",
+  "overall_passed": true,
+  "checks": {
+    "schema": {
+      "passed": true,
+      "tables": {
+        "events": {
+          "passed": true
+        }
+      }
+    },
+    "data_quality": {
+      "passed": true,
+      "null_fractions": {}
+    },
+    "pii_policy": {
+      "passed": true
+    },
+    "foreign_keys": {
+      "passed": true,
+      "violations": []
+    }
+  },
+  "lineage": {
+    "source": {
+      "filename": "test_data/events_sample.csv",
+      "rows_in": 4
+    },
+    "target": {
+      "filename": "analytics_events.csv",
+      "rows_out": 1
+    }
+  },
+  "metadata": {
+    "generated_at_utc": "2025-11-27T17:22:55Z"
+  }
+}

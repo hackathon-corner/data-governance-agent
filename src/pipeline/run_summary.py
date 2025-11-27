@@ -6,7 +6,13 @@ import json
 from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict
+import numpy as np
+
 import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RUN_SUMMARIES_DIR = PROJECT_ROOT / "data" / "run_summaries"
+RUN_SUMMARIES_DIR.mkdir(parents=True, exist_ok=True)
 
 def _remove_dataframes(d: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -18,11 +24,63 @@ def _remove_dataframes(d: Dict[str, Any]) -> Dict[str, Any]:
     """
     clean: Dict[str, Any] = {}
     for k, v in d.items():
+        # drop DataFrame values at the top-level.
+        # nested DataFrames will be handled by the sanitizer below.
         if isinstance(v, pd.DataFrame):
-            # skip DataFrames in the summary
             continue
         clean[k] = v
     return clean
+
+
+def _sanitize_for_json(obj: Any) -> Any:
+    """
+    Recursively convert pandas / numpy scalars and containers into
+    plain Python builtins that json.dump will accept.
+
+    - numpy integer/float/bool -> int/float/bool
+    - numpy arrays / pandas Index -> lists
+    - pandas Timestamp -> ISO string
+    - pd.NA / NaN / NaT -> None
+    - dict/list/tuple/set -> converted recursively
+    """
+
+    # simple fast-paths
+    if obj is None:
+        return None
+
+    # pandas/numpy NA values -> None
+    try:
+        if pd.isna(obj):
+            return None
+    except Exception:
+        # pd.isna can raise for some types (e.g. dict) - ignore
+        pass
+
+    # numpy scalar types
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, (np.bool_,)):
+        return bool(obj)
+
+    # pandas types
+    if isinstance(obj, pd.Timestamp):
+        return obj.isoformat()
+
+    # containers
+    if isinstance(obj, dict):
+        return {str(k): _sanitize_for_json(v) for k, v in obj.items()}
+
+    if isinstance(obj, (list, tuple, set)):
+        return [_sanitize_for_json(x) for x in obj]
+
+    # numpy arrays / pandas Index
+    if isinstance(obj, (np.ndarray, pd.Index)):
+        return [_sanitize_for_json(x) for x in list(obj)]
+
+    # default: leave as-is (json.dumps will raise if unhandled)
+    return obj
 
 
 def build_run_summary(
@@ -90,27 +148,30 @@ def build_run_summary(
     # Overall run passes only if all individual checks pass
     summary["overall_passed"] = schema_passed and dq_passed and pii_passed and fk_passed
 
-    return summary
+    # Make sure the summary contains only JSON-friendly values before returning
+    sanitized = _sanitize_for_json(summary)
+    return sanitized
 
 
-def save_run_summary(summary: Dict[str, Any], output_dir: str = "reports") -> str:
+def save_run_summary(summary: dict, timestamp: str | None = None) -> tuple[Path, str]:
     """
-    Persist the run summary to a JSON file under the given output directory.
+    Save a JSON summary to data/run_summaries/run_summary_<timestamp>.json.
 
-    Returns:
-        The path to the written JSON file as a string.
+    Returns (summary_path, timestamp).
     """
-    reports_dir = Path(output_dir)
-    reports_dir.mkdir(parents=True, exist_ok=True)
+    if timestamp is None:
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
-    run_id = summary.get("run_id") or "unknown_run"
-    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"run_summary_{run_id}_{ts}.json"
+    summary_path = RUN_SUMMARIES_DIR / f"run_summary_{timestamp}.json"
 
-    path = reports_dir / filename
-    path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    def default(o):
+        # Make everything JSON-serializable
+        return str(o)
 
-    return str(path)
+    with summary_path.open("w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, default=default)
+
+    return summary_path, timestamp
 
 
 class RunSummaryAgent:

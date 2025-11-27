@@ -1,0 +1,125 @@
+{
+  "config": {
+    "run_id": "local-dev",
+    "description": "Sample pipeline run for Data Governance Agent capstone.",
+    "sources": {
+      "events": {
+        "filename": "events_good.csv"
+      },
+      "users": {
+        "filename": "users_good.csv"
+      },
+      "courses": {
+        "filename": "courses_good.csv"
+      }
+    },
+    "targets": {
+      "events_curated": {
+        "filename": "analytics_events.csv"
+      }
+    },
+    "data_quality": {
+      "unique_keys": [
+        "event_id"
+      ],
+      "non_null_columns": [
+        "event_id",
+        "user_id",
+        "timestamp"
+      ],
+      "allowed_event_types": [
+        "page_view",
+        "assignment_submit",
+        "discussion_post",
+        "quiz_start",
+        "quiz_submit",
+        "video_play"
+      ]
+    },
+    "schema": {
+      "foreign_keys": [
+        {
+          "table": "events",
+          "column": "user_id",
+          "ref_table": "users",
+          "ref_column": "user_id"
+        },
+        {
+          "table": "events",
+          "column": "course_id",
+          "ref_table": "courses",
+          "ref_column": "course_id"
+        }
+      ]
+    },
+    "policy": {
+      "pii_columns": [
+        "user_email",
+        "ip_address"
+      ],
+      "pii_allowed_in_raw": true,
+      "pii_allowed_in_curated": false
+    }
+  },
+  "schema_results": {
+    "passed": true,
+    "tables": {
+      "events": {
+        "missing_columns": [],
+        "extra_columns": [],
+        "invalid_values": {},
+        "type_mismatches": {},
+        "passed": true
+      },
+      "users": {
+        "missing_columns": [],
+        "extra_columns": [],
+        "invalid_values": {},
+        "type_mismatches": {},
+        "passed": true
+      },
+      "courses": {
+        "missing_columns": [],
+        "extra_columns": [],
+        "invalid_values": {},
+        "type_mismatches": {},
+        "passed": true
+      }
+    }
+  },
+  "dq_results": {
+    "null_fractions": {
+      "event_id": 0.0,
+      "user_id": 0.0,
+      "course_id": 0.0,
+      "event_type": 0.0,
+      "timestamp": 0.0,
+      "ip_address": 0.0,
+      "user_email": 0.0
+    },
+    "columns_exceeding_null_threshold": {},
+    "non_null_violations": {},
+    "unique_key_violations": {},
+    "invalid_event_types": [],
+    "passed": true
+  },
+  "pii_results": {
+    "df_curated": "  event_id user_id course_id         event_type             timestamp\n0       e1      u1        c1          page_view  2025-01-15T09:00:00Z\n1       e2      u2        c1         video_play  2025-01-15T09:05:00Z\n2       e3      u1        c2         quiz_start  2025-01-15T09:10:00Z\n3       e4      u3        c2        quiz_submit  2025-01-15T09:15:00Z\n4       e5      u4        c3          page_view  2025-01-15T09:20:00Z\n5       e6      u2        c3  assignment_submit  2025-01-15T09:25:00Z\n6       e7      u3        c1    discussion_post  2025-01-15T09:30:00Z\n7       e8      u4        c2         video_play  2025-01-15T09:35:00Z",
+    "detected_pii_columns": [
+      "ip_address",
+      "user_email"
+    ],
+    "removed_pii_columns": [
+      "ip_address",
+      "user_email"
+    ],
+    "remaining_pii_in_curated": [],
+    "pii_allowed_in_raw": true,
+    "pii_allowed_in_curated": false,
+    "passed": true
+  },
+  "fk_results": {
+    "passed": true,
+    "violations": []
+  }
+}

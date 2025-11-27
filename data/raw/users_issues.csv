@@ -1,0 +1,5 @@
+user_id,user_email,is_active
+101,alice@example.com,true
+102,bob@example.com,true
+103,,true
+101,dupe@example.com,false

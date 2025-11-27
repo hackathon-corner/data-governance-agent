@@ -1,0 +1,37 @@
+run_id: "local-issues"
+description: "Config for a problematic pipeline run to surface schema / DQ / FK issues."
+
+sources:
+  events:
+    filename: "test_data/events_rich_sample.csv"
+  users:
+    filename: "test_data/users_sample.csv"
+  courses:
+    filename: "test_data/courses_sample.csv"
+
+targets:
+  events_curated:
+    filename: "analytics_events.csv"
+
+data_quality:
+  unique_keys: ["event_id"]
+  non_null_columns: ["event_id", "user_id", "timestamp"]
+  allowed_event_types: ["page_view", "assignment_submit", "discussion_post", "quiz_start", "quiz_submit","video_play"]
+  null_threshold_columns: ["course_id"]
+  max_null_fraction_per_column: 0.05
+
+schema:
+  foreign_keys:
+    - table: "events"
+      column: "user_id"
+      ref_table: "users"
+      ref_column: "user_id"
+    - table: "events"
+      column: "course_id"
+      ref_table: "courses"
+      ref_column: "course_id"
+
+policy:
+  pii_columns: ["user_email", "ip_address"]
+  pii_allowed_in_raw: true
+  pii_allowed_in_curated: false

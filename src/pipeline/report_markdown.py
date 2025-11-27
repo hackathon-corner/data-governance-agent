@@ -6,6 +6,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+REPORTS_DIR = PROJECT_ROOT / "reports"
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 def build_markdown_from_summary(summary: Dict[str, Any]) -> str:
     """
@@ -166,18 +169,16 @@ def build_markdown_from_summary(summary: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def save_markdown_report(markdown: str, filename: Optional[str] = None) -> str:
-    """
-    Save markdown report under the reports/ directory.
-    Returns the path as a string.
-    """
-    reports_dir = Path("reports")
-    reports_dir.mkdir(parents=True, exist_ok=True)
 
-    if filename is None:
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"governance_report_{ts}.md"
+def save_markdown_report(markdown: str, timestamp: str | None = None) -> Path:
+    """
+    Save the markdown report to reports/governance_report_<timestamp>.md.
 
-    path = reports_dir / filename
-    path.write_text(markdown, encoding="utf-8")
-    return str(path)
+    If timestamp is not provided, a new UTC timestamp is generated.
+    """
+    if timestamp is None:
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+    report_path = REPORTS_DIR / f"governance_report_{timestamp}.md"
+    report_path.write_text(markdown, encoding="utf-8")
+    return report_path

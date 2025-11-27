@@ -13,6 +13,14 @@ def _run_with_source_filename(filename: str):
     config_copy = copy.deepcopy(base_config)
     config_copy["sources"]["events"]["filename"] = filename
 
+    # In tests we want deterministic, small fixture files. Point users/courses
+    # to the dedicated test_data fixtures so schema checks operate on the
+    # small in-repo samples rather than the full 'users_good.csv'.
+    if "users" in config_copy["sources"]:
+        config_copy["sources"]["users"]["filename"] = "test_data/users_sample.csv"
+    if "courses" in config_copy["sources"]:
+        config_copy["sources"]["courses"]["filename"] = "test_data/courses_sample.csv"
+
     # Avoid foreign-key checks in unit tests which use small synthetic test files
     # that don't include the related tables. The real pipeline runs FK checks
     # against users/courses tables; tests should isolate the behavior we're
@@ -25,8 +33,17 @@ def _run_with_source_filename(filename: str):
 
 
 def test_good_data_passes_all_checks():
-    # Use the canonical 'events_good.csv' sample which is known to pass
-    result = _run_with_source_filename("events_good.csv")
+    # Use the canonical 'good' fixtures for all source tables so every check
+    # is expected to pass.
+    base_cfg = load_config()
+    cfg = copy.deepcopy(base_cfg)
+    cfg["sources"]["events"]["filename"] = "events_good.csv"
+    cfg["sources"]["users"]["filename"] = "users_good.csv"
+    cfg["sources"]["courses"]["filename"] = "courses_good.csv"
+    cfg.setdefault("schema", {})["foreign_keys"] = []
+
+    coordinator = CoordinatorAgent()
+    result = coordinator.run(config_override=cfg)
 
     config = result["config"]
     schema_results = result["schema_results"]
