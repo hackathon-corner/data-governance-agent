@@ -112,7 +112,31 @@ Data & config layout
 	options: the default `pipeline_config.yaml`, a `pipeline_config_success.yaml`
 	which points at the passing fixtures, and `pipeline_config_issues.yaml`
 	which intentionally uses fixtures that surface errors. This makes it easy
-	to demonstrate pass/fail behavior in the dashboard.
+
+	Agent architecture
+	------------------
+
+	This repository follows a simple 'thin-agent' architecture: most business
+	logic lives in the `src/pipeline/` functions and the `src/agents/` layer
+	provides small, testable wrappers and orchestration. The design intent is
+	to keep concerns separated and make unit-testing easy.
+
+	High-level responsibilities by agent
+	- CoordinatorAgent — orchestrates the full run (schema → DQ → PII → FK)
+		and collects per-step results for reporting. It accepts an optional
+		config_override so callers (CLI, UI) can run alternate YAML configurations
+		without rewriting on-disk files.
+	- SchemaValidationAgent — runs schema checks for a single table and returns
+		structured metadata (missing/extra columns, invalid values).
+	- DataQualityAgent — runs null, uniqueness, and allowed-value checks and
+		returns DQ findings as a dictionary (null_fractions, unique_key_violations, etc.).
+	- PiiPolicyAgent — detects PII using schema tags + config and applies
+		remediation (drops/hides columns) producing a curated DataFrame and
+		metadata describing what was removed.
+	- RunSummaryAgent — takes either a full summary dict or the component
+		result dict returned by the Coordinator and builds a normalized,
+		JSON-serializable summary; it saves both JSON and a Markdown report.
+
 
 
 3) How to run it locally — quick reference
