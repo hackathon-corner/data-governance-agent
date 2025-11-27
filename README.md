@@ -137,6 +137,31 @@ Data & config layout
 		result dict returned by the Coordinator and builds a normalized,
 		JSON-serializable summary; it saves both JSON and a Markdown report.
 
+	Memory & state (implementation-specific)
+	----------------------------------------
+
+	This section explains concrete memory and state considerations based on the
+	repository implementation (so readers can understand the exact hotspots and
+	how to change them safely).
+
+	Key code locations
+	- `src/pipeline/run_pipeline.py`
+	  - `load_events_raw(filename)` and `load_all_sources(config)` call
+	    `pd.read_csv(...)` and return full pandas DataFrames. These are the
+	    primary memory hotspots for local runs and the Streamlit UI.
+
+	- `src/agents/run_summary_agent.py`
+	  - The UI/agent code derives `rows_in` using `len(load_events_raw(...))` and
+	    inspects `pii_results["df_curated"]` to calculate `rows_out`. Returning
+	    full DataFrames inside agent results increases memory pressure and should
+	    be avoided when scaling.
+
+	- `src/pipeline/run_summary.py`
+	  - `build_run_summary()` calls `_remove_dataframes()` then `_sanitize_for_json()`
+	    to create a JSON-friendly summary. `save_run_summary()` writes the final
+	    sanitized JSON. These helpers are used by agents and the dashboard to
+	    persist metadata only (not full tables).
+
 
 
 3) How to run it locally — quick reference
