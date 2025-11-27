@@ -137,6 +137,48 @@ Data & config layout
 		result dict returned by the Coordinator and builds a normalized,
 		JSON-serializable summary; it saves both JSON and a Markdown report.
 
+	Agent tools (implementation)
+	----------------------------
+
+	A short reference to the agent classes and the small tool-like helpers they
+	wrap inside this repository. This is written from the actual code so readers
+	can find and extend the implementation easily.
+
+	- `BaseAgent` (`src/agents/base_agent.py`)
+	  - Abstract base class used by the agents. Implement `run(...)` to make new
+	    agents that match repo conventions and remain testable.
+
+	- `CoordinatorAgent` (`src/agents/coordinator_agent.py`)
+	  - Orchestrates the pipeline (loads config, calls Schema, DQ, PII, FK
+	    checks) and returns either a component-shaped dict or summary metadata.
+	  - Extension point: provide `config_override` programmatically, or add new
+	    step calls and include results in the returned dict for later summarization.
+
+	- `SchemaValidationAgent`, `DataQualityAgent`, `PiiPolicyAgent`
+	  - Thin wrappers around `src/pipeline/*` functions: schema validation,
+	    data-quality computations and PII policy enforcement, respectively.
+	  - These agents are intentionally small and designed to be replaced with
+	    alternative implementations (DB-backed checks, streaming variants, or
+	    ML-based detectors) without changing the Coordinator semantics.
+
+	- `RunSummaryAgent` (`src/agents/run_summary_agent.py`)
+	  - Builds the normalized run summary and persists a timestamped JSON +
+	    Markdown report pair used by the dashboard. It accepts either a
+	    prebuilt summary or the component-shaped Coordinator result and uses
+	    `build_run_summary()` / `save_run_summary()` to sanitize and persist.
+
+	- ADK / LLM example (`data_governance_agent/agent.py`)
+	  - This file demonstrates a lightweight ADK-based LLM agent (google-adk
+	    dependency). It's a small example showing how an LLM-driven wrapper can
+	    sit next to the thin agents here — tests and pipeline runs avoid
+	    calling it to stay deterministic.
+
+	Quick usage patterns
+	- Programmatic run: `CoordinatorAgent().run()` returns component dicts you
+	  can inspect and feed into `RunSummaryAgent` / `generate_markdown_report()`.
+	- Avoid returning DataFrames from agents; prefer small metadata dicts so
+	  reporting, UI and persistence layers stay light and JSON-friendly.
+
 	Memory & state (implementation-specific)
 	----------------------------------------
 
