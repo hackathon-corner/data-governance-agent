@@ -254,16 +254,5 @@ Contribution & code style
 License
 -------
 This project is a small, instructional repository — treat it as MIT-style
-friendly sample code (please check and adapt license fields if converting
-the code to an internal project).
-
-If you'd like, I can also:
-- Add a 'developer quickstart' script that bootstraps a dev environment and
-	creates the expected folders/fixtures
-- Add a Streamlit UI button to explicitly clear or reset session_state values
-	(handy during interactive development)
-- Add CI steps to run tests and check that JSON summaries are serializable
-
-If you want, I can create a short `CONTRIBUTING.md` or improve the project
-README to include any other project-specific deployment details you expect.
+friendly sample code.
 
