@@ -115,7 +115,7 @@ Data & config layout
 
     Here is the high level architecture diagram:
 
-	```
+```
                        ┌──────────────────────────────────────────────┐
                    │             Raw Data Sources                  │
                    │    (events_raw CSV, schema JSON, config)     │
@@ -166,96 +166,96 @@ Data & config layout
                    └──────────────────────────────────────────────┘
 ```
     
-    Agent architecture
-	------------------
+Agent architecture
+------------------
 
-	This repository follows a simple 'thin-agent' architecture: most business
-	logic lives in the `src/pipeline/` functions and the `src/agents/` layer
-	provides small, testable wrappers and orchestration. The design intent is
-	to keep concerns separated and make unit-testing easy.
+This repository follows a simple 'thin-agent' architecture: most business
+logic lives in the `src/pipeline/` functions and the `src/agents/` layer
+provides small, testable wrappers and orchestration. The design intent is
+to keep concerns separated and make unit-testing easy.
 
-	High-level responsibilities by agent
-	- CoordinatorAgent — orchestrates the full run (schema → DQ → PII → FK)
-		and collects per-step results for reporting. It accepts an optional
-		config_override so callers (CLI, UI) can run alternate YAML configurations
-		without rewriting on-disk files.
-	- SchemaValidationAgent — runs schema checks for a single table and returns
-		structured metadata (missing/extra columns, invalid values).
-	- DataQualityAgent — runs null, uniqueness, and allowed-value checks and
-		returns DQ findings as a dictionary (null_fractions, unique_key_violations, etc.).
-	- PiiPolicyAgent — detects PII using schema tags + config and applies
-		remediation (drops/hides columns) producing a curated DataFrame and
-		metadata describing what was removed.
-	- RunSummaryAgent — takes either a full summary dict or the component
-		result dict returned by the Coordinator and builds a normalized,
-		JSON-serializable summary; it saves both JSON and a Markdown report.
+High-level responsibilities by agent
+- CoordinatorAgent — orchestrates the full run (schema → DQ → PII → FK)
+    and collects per-step results for reporting. It accepts an optional
+    config_override so callers (CLI, UI) can run alternate YAML configurations
+    without rewriting on-disk files.
+- SchemaValidationAgent — runs schema checks for a single table and returns
+    structured metadata (missing/extra columns, invalid values).
+- DataQualityAgent — runs null, uniqueness, and allowed-value checks and
+    returns DQ findings as a dictionary (null_fractions, unique_key_violations, etc.).
+- PiiPolicyAgent — detects PII using schema tags + config and applies
+    remediation (drops/hides columns) producing a curated DataFrame and
+    metadata describing what was removed.
+- RunSummaryAgent — takes either a full summary dict or the component
+    result dict returned by the Coordinator and builds a normalized,
+    JSON-serializable summary; it saves both JSON and a Markdown report.
 
-	Agent tools (implementation)
-	----------------------------
+Agent tools (implementation)
+----------------------------
 
-	A short reference to the agent classes and the small tool-like helpers they
-	wrap inside this repository. This is written from the actual code so readers
-	can find and extend the implementation easily.
+A short reference to the agent classes and the small tool-like helpers they
+wrap inside this repository. This is written from the actual code so readers
+can find and extend the implementation easily.
 
-	- `BaseAgent` (`src/agents/base_agent.py`)
-	  - Abstract base class used by the agents. Implement `run(...)` to make new
-	    agents that match repo conventions and remain testable.
+- `BaseAgent` (`src/agents/base_agent.py`)
+    - Abstract base class used by the agents. Implement `run(...)` to make new
+    agents that match repo conventions and remain testable.
 
-	- `CoordinatorAgent` (`src/agents/coordinator_agent.py`)
-	  - Orchestrates the pipeline (loads config, calls Schema, DQ, PII, FK
-	    checks) and returns either a component-shaped dict or summary metadata.
-	  - Extension point: provide `config_override` programmatically, or add new
-	    step calls and include results in the returned dict for later summarization.
+- `CoordinatorAgent` (`src/agents/coordinator_agent.py`)
+    - Orchestrates the pipeline (loads config, calls Schema, DQ, PII, FK
+    checks) and returns either a component-shaped dict or summary metadata.
+    - Extension point: provide `config_override` programmatically, or add new
+    step calls and include results in the returned dict for later summarization.
 
-	- `SchemaValidationAgent`, `DataQualityAgent`, `PiiPolicyAgent`
-	  - Thin wrappers around `src/pipeline/*` functions: schema validation,
-	    data-quality computations and PII policy enforcement, respectively.
-	  - These agents are intentionally small and designed to be replaced with
-	    alternative implementations (DB-backed checks, streaming variants, or
-	    ML-based detectors) without changing the Coordinator semantics.
+- `SchemaValidationAgent`, `DataQualityAgent`, `PiiPolicyAgent`
+    - Thin wrappers around `src/pipeline/*` functions: schema validation,
+    data-quality computations and PII policy enforcement, respectively.
+    - These agents are intentionally small and designed to be replaced with
+    alternative implementations (DB-backed checks, streaming variants, or
+    ML-based detectors) without changing the Coordinator semantics.
 
-	- `RunSummaryAgent` (`src/agents/run_summary_agent.py`)
-	  - Builds the normalized run summary and persists a timestamped JSON +
-	    Markdown report pair used by the dashboard. It accepts either a
-	    prebuilt summary or the component-shaped Coordinator result and uses
-	    `build_run_summary()` / `save_run_summary()` to sanitize and persist.
+- `RunSummaryAgent` (`src/agents/run_summary_agent.py`)
+    - Builds the normalized run summary and persists a timestamped JSON +
+    Markdown report pair used by the dashboard. It accepts either a
+    prebuilt summary or the component-shaped Coordinator result and uses
+    `build_run_summary()` / `save_run_summary()` to sanitize and persist.
 
-	- ADK / LLM example (`data_governance_agent/agent.py`)
-	  - This file demonstrates a lightweight ADK-based LLM agent (google-adk
-	    dependency). It's a small example showing how an LLM-driven wrapper can
-	    sit next to the thin agents here — tests and pipeline runs avoid
-	    calling it to stay deterministic.
+- ADK / LLM example (`data_governance_agent/agent.py`)
+    - This file demonstrates a lightweight ADK-based LLM agent (google-adk
+    dependency). It's a small example showing how an LLM-driven wrapper can
+    sit next to the thin agents here — tests and pipeline runs avoid
+    calling it to stay deterministic.
 
-	Quick usage patterns
-	- Programmatic run: `CoordinatorAgent().run()` returns component dicts you
-	  can inspect and feed into `RunSummaryAgent` / `generate_markdown_report()`.
-	- Avoid returning DataFrames from agents; prefer small metadata dicts so
-	  reporting, UI and persistence layers stay light and JSON-friendly.
+Quick usage patterns
+- Programmatic run: `CoordinatorAgent().run()` returns component dicts you
+    can inspect and feed into `RunSummaryAgent` / `generate_markdown_report()`.
+- Avoid returning DataFrames from agents; prefer small metadata dicts so
+    reporting, UI and persistence layers stay light and JSON-friendly.
 
-	Memory & state (implementation-specific)
-	----------------------------------------
+Memory & state (implementation-specific)
+----------------------------------------
 
-	This section explains concrete memory and state considerations based on the
-	repository implementation (so readers can understand the exact hotspots and
-	how to change them safely).
+This section explains concrete memory and state considerations based on the
+repository implementation (so readers can understand the exact hotspots and
+how to change them safely).
 
-	Key code locations
-	- `src/pipeline/run_pipeline.py`
-	  - `load_events_raw(filename)` and `load_all_sources(config)` call
-	    `pd.read_csv(...)` and return full pandas DataFrames. These are the
-	    primary memory hotspots for local runs and the Streamlit UI.
+Key code locations
+- `src/pipeline/run_pipeline.py`
+    - `load_events_raw(filename)` and `load_all_sources(config)` call
+    `pd.read_csv(...)` and return full pandas DataFrames. These are the
+    primary memory hotspots for local runs and the Streamlit UI.
 
-	- `src/agents/run_summary_agent.py`
-	  - The UI/agent code derives `rows_in` using `len(load_events_raw(...))` and
-	    inspects `pii_results["df_curated"]` to calculate `rows_out`. Returning
-	    full DataFrames inside agent results increases memory pressure and should
-	    be avoided when scaling.
+- `src/agents/run_summary_agent.py`
+    - The UI/agent code derives `rows_in` using `len(load_events_raw(...))` and
+    inspects `pii_results["df_curated"]` to calculate `rows_out`. Returning
+    full DataFrames inside agent results increases memory pressure and should
+    be avoided when scaling.
 
-	- `src/pipeline/run_summary.py`
-	  - `build_run_summary()` calls `_remove_dataframes()` then `_sanitize_for_json()`
-	    to create a JSON-friendly summary. `save_run_summary()` writes the final
-	    sanitized JSON. These helpers are used by agents and the dashboard to
-	    persist metadata only (not full tables).
+- `src/pipeline/run_summary.py`
+    - `build_run_summary()` calls `_remove_dataframes()` then `_sanitize_for_json()`
+    to create a JSON-friendly summary. `save_run_summary()` writes the final
+    sanitized JSON. These helpers are used by agents and the dashboard to
+    persist metadata only (not full tables).
 
 
 
