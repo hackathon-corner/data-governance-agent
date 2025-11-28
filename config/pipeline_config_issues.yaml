@@ -3,11 +3,11 @@ description: "Config for a problematic pipeline run to surface schema / DQ / FK 
 
 sources:
   events:
-    filename: "test_data/events_rich_sample.csv"
+    filename: "test_data/events_issues.csv"
   users:
-    filename: "test_data/users_sample.csv"
+    filename: "test_data/users_issues.csv"
   courses:
-    filename: "test_data/courses_sample.csv"
+    filename: "test_data/courses_issues.csv"
 
 targets:
   events_curated:
