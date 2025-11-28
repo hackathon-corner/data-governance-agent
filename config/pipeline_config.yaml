@@ -3,11 +3,11 @@ description: "Sample pipeline run for Data Governance Agent capstone."
 
 sources:
   events:
-    filename: "events_good.csv"
+    filename: "test_data/events_rich_sample.csv"
   users:
-    filename: "users_good.csv"
+    filename: "test_data/users_sample.csv"
   courses:
-    filename: "courses_good.csv"
+    filename: "test_data/courses_sample.csv"
 
 targets:
   events_curated:
