@@ -376,7 +376,7 @@ interface or a local fast-mode for tests so CI stays deterministic.
 
 6) Deployment Pipeline
 ----------------------
-Here is the link to the deployed application: [Click here](https:\\wwww.google.com)
+Here is the link to the deployed application: [Click here](https://data-governance-agent-211677091470.us-central1.run.app/)
 ```
 ┌───────────────────────────┐
 │       GitHub Repo         │
