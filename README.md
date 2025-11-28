@@ -257,6 +257,35 @@ Key code locations
     sanitized JSON. These helpers are used by agents and the dashboard to
     persist metadata only (not full tables).
 
+Here is the diagram of Multi-Agent Architecture:
+```
+┌───────────────────────────────┐
+│         Root Agent            │
+│      DataGovernanceRoot       │
+│  - Interprets user intent     │
+│  - Delegates work             │
+│  - Can call tools directly    │
+│  - Or activate workflow       │
+└───────────────────────────────┘
+                 │
+                 ▼
+┌───────────────────────────────────────────────────────────────┐
+│                 SequentialAgent: GovernanceWorkflow            │
+│   Orchestrates 4 LLM-powered governance sub-agents             │
+└───────────────────────────────────────────────────────────────┘
+     │                │                 │                 │
+     ▼                ▼                 ▼                 ▼
+┌───────────┐   ┌──────────────┐   ┌─────────────┐  ┌───────────────────┐
+│ Schema     │   │ DataQuality  │   │  PII Agent  │  │  Report Agent     │
+│ Agent      │   │ Agent        │   │ (Privacy)   │  │ (LLM summarizer)  │
+│ - Calls    │   │ - Calls      │   │ - Calls      │  │ - Reads          │
+│   run_     │   │   run_       │   │   run_       │  │   session.state  │
+│   schema   │   │   dq_checks  │   │   pii_checks │  │ - Produces full  │
+│ - Writes   │   │ - Writes     │   │ - Writes     │  │   Markdown        │
+│   schema_  │   │   dq_summary │   │   pii_summary│  │   report         │
+│   summary  │   │              │   │              │  │ - Writes report  │
+└───────────┘   └──────────────┘   └─────────────┘  └───────────────────┘
+```
 
 
 3) How to run it locally — quick reference
