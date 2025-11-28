@@ -111,9 +111,62 @@ Data & config layout
 - config — pipeline configuration YAML files. The repo includes three
 	options: the default `pipeline_config.yaml`, a `pipeline_config_success.yaml`
 	which points at the passing fixtures, and `pipeline_config_issues.yaml`
-	which intentionally uses fixtures that surface errors. This makes it easy
+	which intentionally uses fixtures that surface errors. 
 
-	Agent architecture
+    Here is the high level architecture diagram:
+
+	```
+                       ┌──────────────────────────────────────────────┐
+                   │             Raw Data Sources                  │
+                   │    (events_raw CSV, schema JSON, config)     │
+                   └──────────────────────────────────────────────┘
+                                      │
+                                      ▼
+                   ┌──────────────────────────────────────────────┐
+                   │          CoordinatorAgent (Python)            │
+                   │  - Loads config, schema                      │
+                   │  - Loads raw event dataset                   │
+                   │  - Calls 3 validation tools                  │
+                   │  - Produces unified summary dict             │
+                   └──────────────────────────────────────────────┘
+                                      │
+                                      ▼
+          ┌───────────────────────────────────────────────────────────────────────┐
+          │                          Validation Tools                             │
+          │                                                                       │
+          │   1. run_schema_checks_only()  -> SchemaValidationAgent               │
+          │          - missing columns                                           │
+          │          - invalid values                                            │
+          │          - extra columns                                             │
+          │                                                                       │
+          │   2. run_data_quality_checks_only() -> DataQualityAgent              │
+          │          - null fractions                                            │
+          │          - threshold violations                                      │
+          │          - unique key failures                                       │
+          │                                                                       │
+          │   3. run_pii_policy_checks_only() -> PiiPolicyAgent                  │
+          │          - detect PII                                                │
+          │          - remove PII from curated data                              │
+          └───────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+                   ┌──────────────────────────────────────────────┐
+                   │        Summary & Reporting Layer             │
+                   │  - build_markdown_from_summary()            │
+                   │  - save_markdown_report()                    │
+                   │  - returns governance_report.md path         │
+                   └──────────────────────────────────────────────┘
+                                      │
+                                      ▼
+                   ┌──────────────────────────────────────────────┐
+                   │   Output Artifacts                           │
+                   │  - Curated CSV (PII-removed)                 │
+                   │  - Governance Report (Markdown)              │
+                   │  - JSON/console results for ADK agents       │
+                   └──────────────────────────────────────────────┘
+```
+    
+    Agent architecture
 	------------------
 
 	This repository follows a simple 'thin-agent' architecture: most business
