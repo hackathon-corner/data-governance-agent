@@ -374,8 +374,42 @@ They rely on small fixtures in `data/raw/test_data/`. Test coverage includes:
 If you add features that call external services, prefer to provide a mock
 interface or a local fast-mode for tests so CI stays deterministic.
 
+6) Deployment Pipeline
+----------------------
+Here is the link to the deployed application: [Click here](https:\\wwww.google.com)
+```
+┌───────────────────────────┐
+│       GitHub Repo         │
+│   - agent.py              │
+│   - src/* codebase        │
+│   - requirements.txt      │
+└───────────────────────────┘
+                │
+                ▼  (Cloud Build)
+┌───────────────────────────┐
+│     Container Image        │
+│  Auto-built using ADK      │
+└───────────────────────────┘
+                │
+                ▼  (Deploy)
+┌───────────────────────────┐
+│        Cloud Run           │
+│  - Public HTTPS endpoint   │
+│  - Runs ADK agent runtime  │
+│  - Scales to zero          │
+│  - Auto-billing per call   │
+└───────────────────────────┘
+                │
+                ▼
+┌───────────────────────────┐
+│   End Users / Kaggle       │
+│   - adk run against root   │
+│   - run full pipeline      │
+│   - generate report        │
+└───────────────────────────┘
+```
 
-6) Troubleshooting & common issues
+7) Troubleshooting & common issues
 ----------------------------------
 
 Streamlit / session state selectbox TypeError
@@ -403,7 +437,7 @@ JSON serialization / numpy/pandas scalars
 		 transient vs permanent failures.
 
 
-7) Development notes & next steps
+8) Development notes & next steps
 ---------------------------------
 
 Where to extend
