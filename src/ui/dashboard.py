@@ -143,18 +143,13 @@ with left_col:
     # Option format: (label, filename, description)
     config_options = [
         (
-            "Default (pipeline_config.yaml)",
-            "pipeline_config.yaml",
-            "Use the default configuration in config/pipeline_config.yaml.",
-        ),
-        (
             "Success (pipeline_config_success.yaml)",
             "pipeline_config_success.yaml",
             "A small sample configuration that uses 'good' sample files and should pass all checks.",
         ),
         (
             "Issues (pipeline_config_issues.yaml)",
-            "pipeline_config_issues.yaml",
+            "pipeline_config.yaml",
             "A config pointing to richer test fixtures designed to surface schema, DQ, and FK issues.",
         ),
     ]
